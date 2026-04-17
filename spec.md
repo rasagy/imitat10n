@@ -306,4 +306,4 @@ Warm cream and dark brown — no grays.
 ## Open Questions / Decisions Still To Make
 
 1. **Assignment count** — Confirmed 16. Some students will have both `url` and `doc_url`, but some will only have `url`
-3. **Painting aspect ratios** — Ratio will be mixed
+3. **Painting aspect ratios** — Image size ratio will be mixed
