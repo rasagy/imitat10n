@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Painted in Code — Creative Coding Gallery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ─── Reset & Base ─────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:              #F5EFE4;
+      --bg-dark:         #EDE4D6;
+      --panel-bg:        rgba(245, 239, 228, 0.91);
+      --text-primary:    #2C1A0E;
+      --text-secondary:  #7A5C3E;
+      --accent:          #7A4F2D;
+      --accent-light:    #A67B52;
+      --frame-mid:       #C8B49A;
+      --frame-dark:      #9E7D5C;
+      --dot-inactive:    rgba(100, 70, 40, 0.22);
+      --dot-active:      #7A4F2D;
+      --counter:         #A89070;
+    }
+
+    html { font-size: 16px; }
+
+    body {
+      background: var(--bg);
+      color: var(--text-primary);
+      font-family: 'Jost', sans-serif;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* ─── Grain Overlay ─────────────────────────────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1000;
+      opacity: 0.028;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      background-repeat: repeat;
+      background-size: 128px 128px;
+    }
+
+    /* ─── Gallery Container ──────────────────────────────────────────────────── */
+    .gallery {
+      height: 100vh;
+      overflow-y: scroll;
+      scroll-snap-type: y mandatory;
+      scrollbar-width: none;
+    }
+    .gallery::-webkit-scrollbar { display: none; }
+
+    /* ─── Dot Navigation ─────────────────────────────────────────────────────── */
+    .dot-nav {
+      position: fixed;
+      right: 28px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 500;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--dot-inactive);
+      cursor: pointer;
+      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  background 0.35s ease;
+      border: none;
+      padding: 0;
+    }
+
+    .dot.active {
+      background: var(--dot-active);
+      transform: scale(1.8);
+    }
+
+    /* ─── Intro Slide ────────────────────────────────────────────────────────── */
+    .intro-slide {
+      height: 100vh;
+      scroll-snap-align: start;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      position: relative;
+      overflow: hidden;
+      padding: 40px;
+    }
+
+    .intro-slide::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 1px;
+      height: 72px;
+      background: linear-gradient(to bottom, var(--frame-mid), transparent);
+    }
+
+    .intro-eyebrow {
+      font-family: 'Jost', sans-serif;
+      font-weight: 300;
+      font-size: 0.7rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 32px;
+    }
+
+    .intro-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 600;
+      font-size: clamp(3.2rem, 7vw, 7rem);
+      line-height: 0.95;
+      text-align: center;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+
+    .intro-title em {
+      font-weight: 300;
+      font-style: italic;
+      color: var(--accent);
+    }
+
+    .intro-subtitle {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-weight: 300;
+      font-size: clamp(1rem, 2.2vw, 1.4rem);
+      color: var(--text-secondary);
+      text-align: center;
+      margin-top: 28px;
+      max-width: 520px;
+      line-height: 1.6;
+    }
+
+    .intro-meta {
+      margin-top: 48px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .intro-meta-line {
+      width: 40px;
+      height: 1px;
+      background: var(--frame-mid);
+    }
+
+    .intro-meta-text {
+      font-family: 'Jost', sans-serif;
+      font-weight: 300;
+      font-size: 0.72rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent-light);
+    }
+
+    .scroll-hint {
+      position: absolute;
+      bottom: 36px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Jost', sans-serif;
+      font-weight: 200;
+      font-size: 0.68rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--counter);
+      animation: hint-pulse 2.8s ease-in-out infinite;
+    }
+
+    @keyframes hint-pulse {
+      0%, 100% { opacity: 0.4; transform: translateX(-50%) translateY(0); }
+      50% { opacity: 0.9; transform: translateX(-50%) translateY(4px); }
+    }
+
+    /* ─── Assignment Slide ───────────────────────────────────────────────────── */
+    .slide {
+      height: 100vh;
+      scroll-snap-align: start;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      position: relative;
+      padding: 48px 80px 48px 48px;
+      overflow: hidden;
+    }
+
+    /* Subtle warm vignette on slide bg */
+    .slide::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 30% 50%, transparent 50%, rgba(44, 26, 14, 0.04) 100%);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* ─── Frame & Image ──────────────────────────────────────────────────────── */
+    .painting-wrapper {
+      position: relative;
+      width: 62%;
+      max-height: 82vh;
+      flex-shrink: 0;
+      z-index: 2;
+    }
+
+    .painting-frame {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      padding: 14px;
+      background: var(--frame-mid);
+      box-shadow:
+        0 2px 0 var(--frame-dark),
+        0 -2px 0 rgba(255,248,240,0.6),
+        2px 0 0 rgba(255,248,240,0.4),
+        -2px 0 0 var(--frame-dark),
+        0 8px 32px rgba(80, 45, 10, 0.22),
+        0 24px 72px rgba(80, 45, 10, 0.13),
+        inset 0 1px 0 rgba(255,248,240,0.7),
+        inset 0 -1px 0 rgba(120, 85, 40, 0.4);
+    }
+
+    .painting-frame::before {
+      content: '';
+      position: absolute;
+      inset: 5px;
+      border: 1px solid rgba(120, 85, 40, 0.35);
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    .painting-frame::after {
+      content: '';
+      position: absolute;
+      inset: 7px;
+      border: 1px solid rgba(255, 248, 235, 0.4);
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    .painting-img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 4/3;
+      object-fit: cover;
+      object-position: center;
+      transform: scale(1.04);
+      transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .slide.is-active .painting-img {
+      transform: scale(1.0);
+    }
+
+    /* ─── Slide Counter ──────────────────────────────────────────────────────── */
+    .slide-counter {
+      position: absolute;
+      bottom: 36px;
+      right: 80px;
+      font-family: 'Jost', sans-serif;
+      font-weight: 200;
+      font-size: 0.72rem;
+      letter-spacing: 0.2em;
+      color: var(--counter);
+      z-index: 10;
+    }
+
+    /* ─── Text Panel ─────────────────────────────────────────────────────────── */
+    .text-panel {
+      position: absolute;
+      bottom: 10%;
+      left: 44px;
+      width: min(320px, 38vw);
+      background: var(--panel-bg);
+      backdrop-filter: blur(18px) saturate(1.2);
+      -webkit-backdrop-filter: blur(18px) saturate(1.2);
+      padding: 32px 28px 28px;
+      z-index: 10;
+      border-left: 2px solid var(--frame-mid);
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+                  transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .slide.is-active .text-panel {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .panel-number {
+      font-family: 'Jost', sans-serif;
+      font-weight: 200;
+      font-size: 0.6rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--accent-light);
+      margin-bottom: 14px;
+    }
+
+    .panel-painting-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 700;
+      font-size: clamp(1.5rem, 2.4vw, 2.1rem);
+      line-height: 1.05;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+      margin-bottom: 6px;
+    }
+
+    .panel-artist {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-style: italic;
+      font-size: clamp(0.95rem, 1.4vw, 1.15rem);
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+      line-height: 1.4;
+    }
+
+    .panel-divider {
+      width: 32px;
+      height: 1px;
+      background: var(--frame-mid);
+      margin-bottom: 18px;
+    }
+
+    /* ─── Student byline — subtle ───────────────────────────────────────────── */
+    .panel-by-label {
+      font-family: 'Jost', sans-serif;
+      font-weight: 300;
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--counter);
+      margin-bottom: 4px;
+    }
+
+    .panel-student {
+      font-family: 'Jost', sans-serif;
+      font-weight: 300;
+      font-size: 0.8rem;
+      letter-spacing: 0.04em;
+      color: var(--text-secondary);
+      text-decoration: none;
+      display: inline-block;
+      margin-bottom: 22px;
+      position: relative;
+      opacity: 0.85;
+    }
+
+    .panel-student::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      width: 0;
+      height: 1px;
+      background: var(--text-secondary);
+      transition: width 0.3s ease;
+    }
+
+    .panel-student:hover::after { width: 100%; }
+    .panel-student:hover { opacity: 1; }
+
+    /* ─── Links area ─────────────────────────────────────────────────────────── */
+    .panel-links {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* Primary CTA — View Interactive */
+    .panel-link-primary {
+      font-family: 'Jost', sans-serif;
+      font-weight: 500;
+      font-size: 0.72rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--bg);
+      background: var(--accent);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      transition: background 0.2s ease, gap 0.2s ease;
+    }
+
+    .panel-link-primary:hover {
+      background: var(--text-primary);
+      gap: 13px;
+    }
+
+    .panel-link-primary .arrow {
+      font-size: 0.9rem;
+      transition: transform 0.2s ease;
+    }
+
+    .panel-link-primary:hover .arrow { transform: translate(2px, -2px); }
+
+    /* Secondary — Documentation */
+    .panel-link-secondary {
+      font-family: 'Jost', sans-serif;
+      font-weight: 300;
+      font-size: 0.62rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--counter);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      opacity: 0.8;
+      transition: opacity 0.2s ease, gap 0.2s ease;
+    }
+
+    .panel-link-secondary:hover { opacity: 1; gap: 9px; }
+
+    .panel-link-secondary .arrow {
+      font-size: 0.75rem;
+      transition: transform 0.2s ease;
+    }
+
+    .panel-link-secondary:hover .arrow { transform: translate(2px, -2px); }
+
+    /* ─── Responsive: Mobile ─────────────────────────────────────────────────── */
+    @media (max-width: 767px) {
+      .dot-nav { display: none; }
+
+      .slide {
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: center;
+        padding: 36px 20px 28px;
+        gap: 0;
+        overflow-y: auto;
+        /* allow content to scroll within snap if needed */
+      }
+
+      .slide::before { display: none; }
+
+      .painting-wrapper {
+        width: 90%;
+        max-height: 50vh;
+        flex-shrink: 0;
+        margin-top: auto;
+      }
+
+      .painting-img {
+        aspect-ratio: 4/3;
+      }
+
+      .text-panel {
+        position: static;
+        width: 90%;
+        border-left: none;
+        border-top: 2px solid var(--frame-mid);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        background: var(--bg);
+        text-align: center;
+        margin-bottom: auto;
+        padding: 24px 20px 20px;
+      }
+
+      .panel-divider { margin: 0 auto 18px; }
+
+      .panel-links { align-items: center; }
+      .panel-link-primary { justify-content: center; width: 100%; }
+
+      .slide-counter {
+        right: 20px;
+        bottom: 14px;
+      }
+
+      .slide {
+        padding-bottom: 48px;
+      }
+    }
+
+    /* ─── Responsive: Tablet ─────────────────────────────────────────────────── */
+    @media (min-width: 768px) and (max-width: 1024px) {
+      .painting-wrapper { width: 68%; }
+      .text-panel { width: min(280px, 42vw); }
+      .slide { padding: 36px 52px 36px 36px; }
+      .slide-counter { right: 52px; }
+    }
+
+    /* ─── Reduced Motion ─────────────────────────────────────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      .painting-img { transform: none !important; transition: none !important; }
+      .text-panel { transition: opacity 0.3s ease !important; transform: none !important; }
+      .scroll-hint { animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Dot Navigation -->
+<nav class="dot-nav" aria-label="Slide navigation" id="dotNav"></nav>
+
+<!-- Gallery -->
+<main class="gallery" id="gallery">
+
+  <!-- Intro Slide -->
+  <section class="intro-slide" data-index="0">
+    <p class="intro-eyebrow">Masters in Information Design &nbsp;·&nbsp; NID Bangalore &nbsp;·&nbsp; 2024</p>
+    <h1 class="intro-title">Painted<br><em>in Code</em></h1>
+    <p class="intro-subtitle">Sixteen students. Sixteen artworks.<br>Recreated entirely in p5.js — then made interactive.<br>Made for Creative Coding module by <a href="https://www.linkedin.com/in/rasagy/">Rasagy Sharma</a> </p>
+    <div class="intro-meta">
+      <div class="intro-meta-line"></div>
+      <span class="intro-meta-text">Creative Coding — Introductory Module</span>
+      <div class="intro-meta-line"></div>
+    </div>
+    <span class="scroll-hint">Scroll to explore ↓</span>
+  </section>
+
+  <!-- Assignment slides injected by JS -->
+
+</main>
+
+<script>
+  // ─── CSV Parser ────────────────────────────────────────────────────────────
+  function parseCSV(text) {
+    const lines = text.trim().split('\n');
+    const headers = lines[0].split(',').map(h => h.trim());
+    return lines.slice(1).map(line => {
+      // Handle commas inside quoted fields
+      const cols = [];
+      let cur = '', inQuote = false;
+      for (let ch of line) {
+        if (ch === '"') { inQuote = !inQuote; }
+        else if (ch === ',' && !inQuote) { cols.push(cur.trim()); cur = ''; }
+        else { cur += ch; }
+      }
+      cols.push(cur.trim());
+      return Object.fromEntries(headers.map((h, i) => [h, cols[i] ?? '']));
+    });
+  }
+
+  // ─── Build Gallery ──────────────────────────────────────────────────────────
+  function buildGallery(assignments) {
+    const gallery = document.getElementById('gallery');
+    const total = assignments.length;
+
+    assignments.forEach((a, i) => {
+      const num = String(i + 1).padStart(2, '0');
+      const totalStr = String(total).padStart(2, '0');
+
+      const docLinkHTML = a.doc_url
+        ? `<a class="panel-link-secondary" href="${a.doc_url}" target="_blank" rel="noopener" aria-label="View documentation for ${a.painting_name}">
+             Documentation <span class="arrow">↗</span>
+           </a>`
+        : '';
+
+      const slide = document.createElement('section');
+      slide.className = 'slide';
+      slide.dataset.index = i + 1;
+      slide.setAttribute('aria-label', `${a.painting_name} by ${a.artist_name}`);
+
+      slide.innerHTML = `
+        <div class="painting-wrapper">
+          <div class="painting-frame">
+            <img
+              class="painting-img"
+              src="images/${a.image_name}"
+              alt="${a.painting_name} by ${a.artist_name}, recreated by ${a.student_name}"
+              loading="lazy"
+            />
+          </div>
+        </div>
+
+        <div class="text-panel">
+          <p class="panel-number">No. ${num}</p>
+          <h2 class="panel-painting-name">${a.painting_name}</h2>
+          <p class="panel-artist">${a.artist_name}</p>
+          <div class="panel-divider"></div>
+          <p class="panel-by-label">Recreated by</p>
+          <a
+            class="panel-student"
+            href="${a.linkedin_url}"
+            target="_blank"
+            rel="noopener"
+            aria-label="${a.student_name}'s LinkedIn profile"
+          >${a.student_name}</a>
+          <div class="panel-links">
+            <a class="panel-link-primary" href="${a.url}" target="_blank" rel="noopener" aria-label="View interactive version of ${a.painting_name}">
+              View Interactive <span class="arrow">↗</span>
+            </a>
+            ${docLinkHTML}
+          </div>
+        </div>
+
+        <span class="slide-counter" aria-label="Slide ${i + 1} of ${total}">${num} / ${totalStr}</span>
+      `;
+
+      gallery.appendChild(slide);
+    });
+
+    initNav(total);
+  }
+
+  // ─── Navigation & Observers ────────────────────────────────────────────────
+  function initNav(total) {
+    const gallery = document.getElementById('gallery');
+    const dotNav = document.getElementById('dotNav');
+    const slideCount = total + 1; // includes intro
+    let currentSlideIndex = 0;
+
+    // Build dots
+    for (let i = 0; i < slideCount; i++) {
+      const dot = document.createElement('button');
+      dot.className = 'dot' + (i === 0 ? ' active' : '');
+      dot.setAttribute('aria-label', i === 0 ? 'Intro slide' : `Assignment ${i}`);
+      dot.addEventListener('click', () => scrollToSlide(i));
+      dotNav.appendChild(dot);
+    }
+
+    function scrollToSlide(index) {
+      const target = gallery.querySelector(`[data-index="${index}"]`);
+      if (target) target.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function updateDots(activeIndex) {
+      dotNav.querySelectorAll('.dot').forEach((dot, i) => {
+        dot.classList.toggle('active', i === activeIndex);
+      });
+    }
+
+    // IntersectionObserver for active state + animations
+    const allSlides = gallery.querySelectorAll('[data-index]');
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.intersectionRatio >= 0.55) {
+          allSlides.forEach(s => s.classList.remove('is-active'));
+          entry.target.classList.add('is-active');
+          const idx = parseInt(entry.target.dataset.index);
+          currentSlideIndex = idx;
+          updateDots(idx);
+
+          // Preload next image
+          const nextSlide = gallery.querySelector(`[data-index="${idx + 1}"]`);
+          if (nextSlide) {
+            const nextImg = nextSlide.querySelector('img');
+            if (nextImg && nextImg.loading === 'lazy') nextImg.loading = 'eager';
+          }
+        }
+      });
+    }, { threshold: 0.55 });
+
+    allSlides.forEach(slide => observer.observe(slide));
+
+    // Keyboard
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowDown' || e.key === 'PageDown') {
+        e.preventDefault();
+        currentSlideIndex = Math.min(currentSlideIndex + 1, slideCount - 1);
+        scrollToSlide(currentSlideIndex);
+      } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+        e.preventDefault();
+        currentSlideIndex = Math.max(currentSlideIndex - 1, 0);
+        scrollToSlide(currentSlideIndex);
+      }
+    });
+
+    // Touch swipe
+    let touchStartY = 0;
+    gallery.addEventListener('touchstart', (e) => {
+      touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    gallery.addEventListener('touchend', (e) => {
+      const delta = touchStartY - e.changedTouches[0].clientY;
+      if (Math.abs(delta) < 50) return;
+      currentSlideIndex = delta > 0
+        ? Math.min(currentSlideIndex + 1, slideCount - 1)
+        : Math.max(currentSlideIndex - 1, 0);
+      scrollToSlide(currentSlideIndex);
+    }, { passive: true });
+  }
+
+  // ─── Load CSV ──────────────────────────────────────────────────────────────
+  // The page expects dataset.csv to live alongside index.html in the same folder.
+  fetch('dataset.csv')
+    .then(res => {
+      if (!res.ok) throw new Error(`Could not load dataset.csv (${res.status})`);
+      return res.text();
+    })
+    .then(text => {
+      const assignments = parseCSV(text);
+      buildGallery(assignments);
+    })
+    .catch(err => {
+      // Show a friendly error inside the gallery if the CSV fails to load
+      const gallery = document.getElementById('gallery');
+      const errSlide = document.createElement('section');
+      errSlide.style.cssText = 'height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;scroll-snap-align:start;';
+      errSlide.innerHTML = `
+        <p style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--text-secondary);font-style:italic;">Could not load dataset.csv</p>
+        <p style="font-family:'Jost',sans-serif;font-size:0.72rem;letter-spacing:0.12em;color:var(--counter);">${err.message}</p>
+        <p style="font-family:'Jost',sans-serif;font-size:0.68rem;color:var(--counter);max-width:380px;text-align:center;line-height:1.8;">
+          Make sure <code>dataset.csv</code> is in the same folder as <code>index.html</code>.<br>
+          When opening locally, use a local server (e.g. <code>npx serve .</code>) — browsers block file:// fetches.
+        </p>
+      `;
+      gallery.appendChild(errSlide);
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,950 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Imitat10n — Gallery</title>
+    <meta
+      name="description"
+      content="A snap-scroll gallery of creative coding recreations of popular paintings."
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --color-bg: #f5efe4;
+        --color-panel: rgba(245, 239, 228, 0.88);
+        --color-text-primary: #2c1a0e;
+        --color-text-secondary: #7a5c3e;
+        --color-accent: #7a4f2d;
+        --color-frame: #c8b49a;
+        --color-frame-dark: #a89070;
+        --color-dot-inactive: rgba(100, 70, 40, 0.25);
+        --color-counter: #a89070;
+
+        --radius: 14px;
+        --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+        --pad: clamp(24px, 4vw, 64px);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        height: 100%;
+      }
+
+      body {
+        margin: 0;
+        background: var(--color-bg);
+        color: var(--color-text-primary);
+        font-family: "Jost", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        overflow: hidden;
+      }
+
+      /* Faint paper grain overlay */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0.065;
+        mix-blend-mode: multiply;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='0.45'/%3E%3C/svg%3E");
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .gallery-container {
+        height: 100vh;
+        overflow-y: auto;
+        scroll-snap-type: y mandatory;
+        scroll-behavior: smooth;
+        overscroll-behavior: contain;
+      }
+
+      .slide {
+        height: 100vh;
+        scroll-snap-align: start;
+        position: relative;
+        padding: var(--pad);
+        display: grid;
+        place-items: center;
+      }
+
+      .slide-shell {
+        width: 100%;
+        max-width: 1280px;
+        height: 100%;
+        display: flex;
+        align-items: center;
+      }
+
+      .intro-card {
+        width: 100%;
+        max-width: 900px;
+        text-align: center;
+      }
+
+      .intro-title {
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        font-size: clamp(42px, 5vw, 68px);
+        line-height: 1.05;
+        margin: 0 0 16px;
+      }
+
+      .intro-sub {
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-style: italic;
+        font-weight: 300;
+        font-size: clamp(18px, 2vw, 22px);
+        line-height: 1.5;
+        color: var(--color-text-secondary);
+        margin: 0 auto 18px;
+        max-width: 70ch;
+      }
+
+      .intro-meta {
+        font-size: 15px;
+        line-height: 1.65;
+        color: var(--color-text-secondary);
+        margin: 0 auto 24px;
+        max-width: 78ch;
+      }
+
+      .intro-meta a {
+        color: var(--color-accent);
+        text-decoration: none;
+        border-bottom: 1px solid rgba(122, 79, 45, 0.25);
+      }
+
+      .intro-meta a:hover {
+        border-bottom-color: rgba(122, 79, 45, 0.55);
+      }
+
+      .scroll-prompt {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 12px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--color-accent);
+        padding: 10px 14px;
+        border-radius: 999px;
+        border: 1px solid rgba(122, 79, 45, 0.25);
+        background: rgba(245, 239, 228, 0.6);
+        animation: promptPulse 2.6s ease-in-out infinite;
+      }
+
+      @keyframes promptPulse {
+        0%,
+        100% {
+          opacity: 0.55;
+          transform: translateY(0);
+        }
+        50% {
+          opacity: 1;
+          transform: translateY(4px);
+        }
+      }
+
+      /* Assignment slide */
+      .painting-stage {
+        width: 72%;
+        margin-left: auto;
+        position: relative;
+      }
+
+      .painting-media {
+        width: 100%;
+        height: min(72vh, 720px);
+        border-radius: 3px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.18);
+      }
+
+      .painting-frame {
+        border: 12px solid var(--color-frame);
+        outline: 2px solid var(--color-frame-dark);
+        outline-offset: -14px;
+        box-shadow:
+          0 4px 12px rgba(80, 50, 20, 0.18),
+          0 12px 40px rgba(80, 50, 20, 0.1),
+          inset 0 0 0 2px rgba(255, 245, 235, 0.4);
+      }
+
+      .painting-img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transform: scale(1.04);
+        opacity: 0;
+        transition:
+          transform 700ms var(--ease-out),
+          opacity 520ms var(--ease-out);
+      }
+
+      .painting-placeholder {
+        width: 100%;
+        height: 100%;
+        display: none;
+        padding: clamp(18px, 2vw, 28px);
+        background: rgba(255, 255, 255, 0.16);
+        color: var(--color-text-secondary);
+      }
+
+      .placeholder-title {
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-weight: 600;
+        font-size: clamp(20px, 3vw, 34px);
+        line-height: 1.1;
+        margin: 0 0 10px;
+        color: var(--color-text-primary);
+      }
+
+      .placeholder-sub {
+        margin: 0;
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      .text-panel {
+        position: absolute;
+        left: clamp(-64px, -4vw, -24px);
+        bottom: clamp(16px, 2vw, 28px);
+        max-width: min(420px, 46%);
+        padding: 18px 18px 14px;
+        border-radius: var(--radius);
+        background: var(--color-panel);
+        -webkit-backdrop-filter: blur(16px);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(168, 144, 112, 0.18);
+
+        opacity: 0;
+        transform: translateY(24px);
+        transition:
+          opacity 520ms var(--ease-out),
+          transform 520ms var(--ease-out);
+      }
+
+      @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+        .text-panel {
+          background: rgba(245, 239, 228, 0.96);
+        }
+      }
+
+      .painting-name {
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-weight: 600;
+        font-size: clamp(28px, 3.2vw, 42px);
+        line-height: 1.05;
+        margin: 0 0 6px;
+      }
+
+      .artist-name {
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-weight: 300;
+        font-style: italic;
+        font-size: 18px;
+        color: var(--color-text-secondary);
+        margin: 0 0 16px;
+      }
+
+      .by-label {
+        font-size: 11px;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: rgba(44, 26, 14, 0.62);
+        margin: 0 0 2px;
+      }
+
+      .student-link {
+        display: inline-block;
+        font-weight: 400;
+        font-size: 13px;
+        letter-spacing: 0.06em;
+        text-decoration: none;
+        color: var(--color-text-secondary);
+        margin-bottom: 12px;
+      }
+
+      .student-link:hover {
+        color: var(--color-text-primary);
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 14px;
+        align-items: center;
+      }
+
+      .action-link {
+        position: relative;
+        font-size: 12px;
+        font-weight: 500;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: var(--color-text-primary);
+        text-decoration: underline;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 3px;
+        padding-bottom: 2px;
+      }
+
+      .action-link::after {
+        content: none;
+      }
+
+      .action-link:hover {
+        color: var(--color-accent);
+      }
+
+      .divider {
+        width: 1px;
+        height: 14px;
+        background: rgba(122, 79, 45, 0.25);
+      }
+
+      .slide-counter {
+        position: absolute;
+        right: clamp(16px, 2vw, 28px);
+        bottom: clamp(16px, 2vw, 28px);
+        font-size: 12px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--color-counter);
+        opacity: 0.85;
+      }
+
+      /* Active state animations (IntersectionObserver toggles .is-active) */
+      .slide.is-active .painting-img {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      .slide.is-active .text-panel {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* Dot nav */
+      .dot-nav {
+        position: fixed;
+        right: 18px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        z-index: 10;
+      }
+
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+        background: var(--color-dot-inactive);
+        transition:
+          transform 220ms var(--ease-out),
+          background-color 220ms var(--ease-out);
+      }
+
+      .dot[aria-current="true"] {
+        transform: scale(1.65);
+        background: var(--color-accent);
+      }
+
+      .dot:focus-visible,
+      .action-link:focus-visible,
+      .student-link:focus-visible,
+      .intro-meta a:focus-visible {
+        outline: 2px solid rgba(122, 79, 45, 0.6);
+        outline-offset: 3px;
+        border-radius: 6px;
+      }
+
+      /* Error card */
+      .error-card {
+        width: 100%;
+        max-width: 860px;
+        border-radius: var(--radius);
+        padding: 22px 22px 18px;
+        border: 1px solid rgba(168, 144, 112, 0.22);
+        background: rgba(245, 239, 228, 0.8);
+      }
+
+      .error-title {
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-weight: 600;
+        font-size: 34px;
+        margin: 0 0 8px;
+      }
+
+      .error-body {
+        margin: 0;
+        line-height: 1.7;
+        color: var(--color-text-secondary);
+      }
+
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
+          monospace;
+        font-size: 0.95em;
+      }
+
+      /* Responsive */
+      @media (max-width: 1024px) {
+        .painting-stage {
+          width: 82%;
+        }
+        .text-panel {
+          max-width: min(480px, 56%);
+        }
+      }
+
+      @media (max-width: 768px) {
+        body {
+          overflow: hidden;
+        }
+
+        .dot-nav {
+          display: none;
+        }
+
+        .painting-stage {
+          width: 90%;
+          margin: 0 auto;
+        }
+
+        .painting-media {
+          height: min(52vh, 520px);
+        }
+
+        .painting-frame {
+          border-width: 8px;
+          outline-offset: -10px;
+        }
+
+        .text-panel {
+          position: static;
+          margin-top: 16px;
+          width: 100%;
+          max-width: none;
+          text-align: center;
+          transform: translateY(0);
+          opacity: 1;
+          -webkit-backdrop-filter: none;
+          backdrop-filter: none;
+          background: rgba(245, 239, 228, 0.94);
+        }
+
+        .artist-name {
+          margin-bottom: 12px;
+        }
+
+        .actions {
+          justify-content: center;
+        }
+
+        .slide-counter {
+          position: static;
+          text-align: center;
+          margin-top: 12px;
+        }
+
+        .painting-img {
+          opacity: 1;
+          transform: none;
+          transition: none;
+        }
+      }
+
+      /* Reduced motion */
+      @media (prefers-reduced-motion: reduce) {
+        .gallery-container {
+          scroll-behavior: auto;
+        }
+
+        .painting-img,
+        .text-panel,
+        .scroll-prompt {
+          transition: none !important;
+          animation: none !important;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <nav class="dot-nav" id="dotNav" aria-label="Slide navigation"></nav>
+
+    <main class="gallery-container" id="gallery" aria-label="Gallery">
+      <section class="slide is-active" data-slide-index="0" aria-label="Intro">
+        <div class="slide-shell">
+          <div class="intro-card">
+            <h1 class="intro-title">Reimagining popular paintings in code</h1>
+            <p class="intro-sub">
+              What would design students create if they explore code as a creative medium?
+            </p>
+            <p class="intro-meta">
+              Part of the Creative Coding module at NID, Bengaluru by
+              <a href="https://www.linkedin.com/in/rasagy/" target="_blank" rel="noopener noreferrer"
+                >Rasagy Sharma</a
+              >. This is the exhibition of their final project: recreating and reimagining popular paintings by adding
+              simple interactivity through code.
+            </p>
+            <div class="scroll-prompt" aria-hidden="true">Scroll to explore ↓</div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      (function () {
+        const gallery = document.getElementById("gallery");
+        const dotNav = document.getElementById("dotNav");
+        const prefersReducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+        let slides = Array.from(gallery.querySelectorAll(".slide"));
+        let activeSlideIndex = 0;
+
+        function parseCSV(text) {
+          // RFC4180-ish CSV parser with support for quoted fields, escaped quotes ("").
+          const rows = [];
+          let row = [];
+          let field = "";
+          let inQuotes = false;
+
+          const input = text.replace(/^\uFEFF/, ""); // strip BOM
+          for (let i = 0; i < input.length; i++) {
+            const char = input[i];
+
+            if (inQuotes) {
+              if (char === '"') {
+                const next = input[i + 1];
+                if (next === '"') {
+                  field += '"';
+                  i++;
+                } else {
+                  inQuotes = false;
+                }
+              } else {
+                field += char;
+              }
+              continue;
+            }
+
+            if (char === '"') {
+              inQuotes = true;
+              continue;
+            }
+
+            if (char === ",") {
+              row.push(field);
+              field = "";
+              continue;
+            }
+
+            if (char === "\n") {
+              row.push(field);
+              field = "";
+              rows.push(row);
+              row = [];
+              continue;
+            }
+
+            if (char === "\r") continue;
+
+            field += char;
+          }
+
+          row.push(field);
+          rows.push(row);
+
+          // drop trailing empty rows
+          while (rows.length) {
+            const last = rows[rows.length - 1];
+            const allEmpty = last.every((cell) => String(cell || "").trim() === "");
+            if (!allEmpty) break;
+            rows.pop();
+          }
+
+          return rows;
+        }
+
+        function escapeText(value) {
+          return String(value == null ? "" : value);
+        }
+
+        function escapeHtml(value) {
+          return escapeText(value)
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#39;");
+        }
+
+        function pad2(n) {
+          return String(n).padStart(2, "0");
+        }
+
+        function buildErrorSlide(message) {
+          const slide = document.createElement("section");
+          slide.className = "slide";
+          slide.dataset.slideIndex = String(slides.length);
+          slide.setAttribute("aria-label", "Error");
+          slide.innerHTML = `
+            <div class="slide-shell">
+              <div class="error-card">
+                <h2 class="error-title">Couldn’t load the dataset</h2>
+                <p class="error-body">
+                  ${escapeHtml(message)}
+                  <br /><br />
+                  This page loads <code>dataset.csv</code> using <code>fetch()</code>, which won’t work from
+                  <code>file://</code>.
+                  <br /><br />
+                  Run a local server in this folder:
+                  <br />
+                  <code>python3 -m http.server</code>
+                  <br />
+                  Then open <code>http://localhost:8000/</code>.
+                </p>
+              </div>
+            </div>
+          `;
+          return slide;
+        }
+
+        function makeActionLink(label, href, ariaLabel) {
+          const a = document.createElement("a");
+          a.className = "action-link";
+          a.href = href;
+          a.target = "_blank";
+          a.rel = "noopener noreferrer";
+          a.textContent = label;
+          if (ariaLabel) a.setAttribute("aria-label", ariaLabel);
+          return a;
+        }
+
+        function buildAssignmentSlide(assignment, indexWithinAssignments, totalAssignments) {
+          const slide = document.createElement("section");
+          slide.className = "slide";
+          slide.setAttribute("aria-label", `Assignment ${indexWithinAssignments + 1}`);
+
+          const stage = document.createElement("div");
+          stage.className = "painting-stage";
+
+          const media = document.createElement("div");
+          media.className = "painting-media painting-frame";
+
+          const img = document.createElement("img");
+          img.className = "painting-img";
+          img.loading = "lazy";
+          img.decoding = "async";
+          img.src = `images/${encodeURIComponent(assignment.image_name)}`;
+          img.alt = `${escapeText(assignment.painting_name)} by ${escapeText(assignment.artist_name)}, recreated by ${escapeText(
+            assignment.student_name
+          )}`;
+
+          const placeholder = document.createElement("div");
+          placeholder.className = "painting-placeholder";
+          placeholder.setAttribute("role", "img");
+          placeholder.setAttribute("aria-label", img.alt);
+          placeholder.innerHTML = `
+            <h3 class="placeholder-title">${escapeHtml(assignment.painting_name)}</h3>
+            <p class="placeholder-sub">
+              Image <code>${escapeHtml(assignment.image_name)}</code> not found under <code>/images/</code>.
+              <br />
+              (${escapeHtml(assignment.artist_name)} — recreated by ${escapeHtml(assignment.student_name)})
+            </p>
+          `;
+
+          img.addEventListener("error", () => {
+            img.style.display = "none";
+            placeholder.style.display = "block";
+          });
+
+          media.appendChild(img);
+          media.appendChild(placeholder);
+
+          const panel = document.createElement("div");
+          panel.className = "text-panel";
+
+          const paintingName = document.createElement("h2");
+          paintingName.className = "painting-name";
+          paintingName.textContent = escapeText(assignment.painting_name);
+
+          const artistName = document.createElement("p");
+          artistName.className = "artist-name";
+          artistName.textContent = escapeText(assignment.artist_name);
+
+          const byLabel = document.createElement("p");
+          byLabel.className = "by-label";
+          byLabel.textContent = "Recreated by";
+
+          let studentEl;
+          if (String(assignment.linkedin_url || "").trim()) {
+            const a = document.createElement("a");
+            a.className = "student-link";
+            a.href = assignment.linkedin_url;
+            a.target = "_blank";
+            a.rel = "noopener noreferrer";
+            a.textContent = escapeText(assignment.student_name);
+            studentEl = a;
+          } else {
+            const span = document.createElement("span");
+            span.className = "student-link";
+            span.style.borderBottomColor = "transparent";
+            span.textContent = escapeText(assignment.student_name);
+            studentEl = span;
+          }
+
+          const actions = document.createElement("div");
+          actions.className = "actions";
+
+          if (String(assignment.url || "").trim()) {
+            actions.appendChild(
+              makeActionLink("View Interactive ↗", assignment.url, `Open interactive for ${escapeText(assignment.painting_name)}`)
+            );
+          }
+
+          if (String(assignment.url || "").trim() && String(assignment.doc_url || "").trim()) {
+            const divider = document.createElement("span");
+            divider.className = "divider";
+            divider.setAttribute("aria-hidden", "true");
+            actions.appendChild(divider);
+          }
+
+          if (String(assignment.doc_url || "").trim()) {
+            actions.appendChild(
+              makeActionLink("Documentation ↗", assignment.doc_url, `Open documentation for ${escapeText(assignment.painting_name)}`)
+            );
+          }
+
+          panel.appendChild(paintingName);
+          panel.appendChild(artistName);
+          panel.appendChild(byLabel);
+          panel.appendChild(studentEl);
+          panel.appendChild(actions);
+
+          stage.appendChild(media);
+          stage.appendChild(panel);
+
+          const shell = document.createElement("div");
+          shell.className = "slide-shell";
+          shell.appendChild(stage);
+
+          slide.appendChild(shell);
+
+          slide.dataset.assignmentIndex = String(indexWithinAssignments);
+          slide.dataset.imageSrc = img.src;
+          return slide;
+        }
+
+        function rebuildDotNav(totalDots) {
+          dotNav.innerHTML = "";
+          for (let i = 0; i < totalDots; i++) {
+            const btn = document.createElement("button");
+            btn.className = "dot";
+            btn.type = "button";
+            btn.dataset.targetIndex = String(i);
+            btn.setAttribute("aria-label", i === 0 ? "Go to intro" : `Go to slide ${i}`);
+            btn.setAttribute("aria-current", i === activeSlideIndex ? "true" : "false");
+            btn.addEventListener("click", () => scrollToSlide(i));
+            dotNav.appendChild(btn);
+          }
+        }
+
+        function updateDotNav() {
+          const dots = Array.from(dotNav.querySelectorAll(".dot"));
+          dots.forEach((d, i) => d.setAttribute("aria-current", i === activeSlideIndex ? "true" : "false"));
+        }
+
+        function scrollToSlide(index) {
+          const clamped = Math.max(0, Math.min(index, slides.length - 1));
+          const target = slides[clamped];
+          if (!target) return;
+          target.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth", block: "start" });
+        }
+
+        function preloadNextImage() {
+          const next = slides[activeSlideIndex + 1];
+          if (!next) return;
+          const src = next.dataset.imageSrc;
+          if (!src) return;
+          const img = new Image();
+          img.src = src;
+        }
+
+        function setupObservers() {
+          if (!("IntersectionObserver" in window)) {
+            slides.forEach((s, idx) => {
+              if (idx === activeSlideIndex) s.classList.add("is-active");
+              else s.classList.remove("is-active");
+            });
+            updateDotNav();
+            return;
+          }
+
+          const observer = new IntersectionObserver(
+            (entries) => {
+              let nextActive = activeSlideIndex;
+              let bestRatio = 0;
+
+              for (const entry of entries) {
+                const idx = Number(entry.target.dataset.slideIndex || "-1");
+                if (entry.isIntersecting && entry.intersectionRatio >= 0.6 && entry.intersectionRatio > bestRatio) {
+                  bestRatio = entry.intersectionRatio;
+                  nextActive = idx;
+                }
+              }
+
+              if (nextActive !== activeSlideIndex) {
+                activeSlideIndex = nextActive;
+                slides.forEach((s, idx) => {
+                  if (idx === activeSlideIndex) s.classList.add("is-active");
+                  else s.classList.remove("is-active");
+                });
+                updateDotNav();
+                preloadNextImage();
+              }
+            },
+            { threshold: [0.2, 0.6, 0.85] }
+          );
+
+          slides.forEach((slide) => observer.observe(slide));
+        }
+
+        function setupInputHandlers() {
+          window.addEventListener("keydown", (e) => {
+            const key = e.key;
+            if (!["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End"].includes(key)) return;
+            e.preventDefault();
+
+            if (key === "Home") return scrollToSlide(0);
+            if (key === "End") return scrollToSlide(slides.length - 1);
+
+            if (key === "ArrowDown" || key === "PageDown") scrollToSlide(activeSlideIndex + 1);
+            if (key === "ArrowUp" || key === "PageUp") scrollToSlide(activeSlideIndex - 1);
+          });
+
+          let touchStartY = null;
+          gallery.addEventListener(
+            "touchstart",
+            (e) => {
+              if (!e.touches || !e.touches.length) return;
+              touchStartY = e.touches[0].clientY;
+            },
+            { passive: true }
+          );
+
+          gallery.addEventListener(
+            "touchend",
+            (e) => {
+              if (touchStartY == null) return;
+              const touch = e.changedTouches && e.changedTouches[0];
+              if (!touch) return;
+              const deltaY = touch.clientY - touchStartY;
+              touchStartY = null;
+
+              if (Math.abs(deltaY) < 50) return;
+              if (deltaY < 0) scrollToSlide(activeSlideIndex + 1);
+              else scrollToSlide(activeSlideIndex - 1);
+            },
+            { passive: true }
+          );
+        }
+
+        async function loadAssignments() {
+          const res = await fetch("dataset.csv", { cache: "no-store" });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const text = await res.text();
+          const rows = parseCSV(text);
+          if (!rows.length) return [];
+
+          const headers = rows[0].map((h) => String(h || "").trim().replace(/^\uFEFF/, ""));
+          const data = rows.slice(1);
+
+          const required = ["student_name", "artist_name", "painting_name", "image_name", "url", "doc_url", "linkedin_url"];
+          const missingHeaders = required.filter((h) => !headers.includes(h));
+          if (missingHeaders.length) {
+            throw new Error(`Missing CSV columns: ${missingHeaders.join(", ")}`);
+          }
+
+          const assignments = [];
+          for (const row of data) {
+            const obj = {};
+            headers.forEach((h, idx) => {
+              obj[h] = String(row[idx] == null ? "" : row[idx]).trim();
+            });
+
+            const isEmpty = required.every((k) => !String(obj[k] || "").trim());
+            if (isEmpty) continue;
+
+            assignments.push({
+              student_name: obj.student_name,
+              artist_name: obj.artist_name,
+              painting_name: obj.painting_name,
+              image_name: obj.image_name,
+              url: obj.url,
+              doc_url: obj.doc_url,
+              linkedin_url: obj.linkedin_url,
+            });
+          }
+
+          return assignments;
+        }
+
+        async function init() {
+          try {
+            const assignments = await loadAssignments();
+
+            const frag = document.createDocumentFragment();
+            assignments.forEach((a, i) => {
+              frag.appendChild(buildAssignmentSlide(a, i, assignments.length));
+            });
+
+            gallery.appendChild(frag);
+
+            slides = Array.from(gallery.querySelectorAll(".slide"));
+            slides.forEach((s, idx) => (s.dataset.slideIndex = String(idx)));
+
+            rebuildDotNav(1 + assignments.length);
+            setupObservers();
+            setupInputHandlers();
+            preloadNextImage();
+          } catch (err) {
+            const slide = buildErrorSlide(escapeText(err && err.message ? err.message : "Unknown error."));
+            gallery.appendChild(slide);
+            slides = Array.from(gallery.querySelectorAll(".slide"));
+            slides.forEach((s, idx) => (s.dataset.slideIndex = String(idx)));
+            rebuildDotNav(slides.length);
+            setupObservers();
+            setupInputHandlers();
+          }
+        }
+
+        init();
+      })();
+    </script>
+  </body>
+</html>
