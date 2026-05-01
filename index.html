@@ -411,11 +411,12 @@
     }
 
     .panel-link-primary .arrow {
-      font-size: 0.9rem;
+      font-size: 1.2rem;
+      padding-bottom: 3px;
       transition: transform 0.2s ease;
     }
 
-    .panel-link-primary:hover .arrow { transform: translate(2px, -2px); }
+    .panel-link-primary:hover .arrow { transform: translate(6px, 0px); }
 
     /* Secondary — Documentation */
     .panel-link-secondary {
@@ -436,11 +437,12 @@
     .panel-link-secondary:hover { opacity: 1; gap: 9px; }
 
     .panel-link-secondary .arrow {
-      font-size: 0.75rem;
+      font-size: 0.9rem;
+      padding-bottom: 2px;
       transition: transform 0.2s ease;
     }
 
-    .panel-link-secondary:hover .arrow { transform: translate(2px, -2px); }
+    .panel-link-secondary:hover .arrow { transform: translate(4px, 0px); }
 
     /* ─── Responsive: Mobile ─────────────────────────────────────────────────── */
     @media (max-width: 767px) {
@@ -568,7 +570,7 @@
 
       const docLinkHTML = a.doc_url
         ? `<a class="panel-link-secondary" href="${a.doc_url}" target="_blank" rel="noopener" aria-label="View documentation for ${a.painting_name}">
-             Documentation <span class="arrow">↗</span>
+             Documentation <span class="arrow">›</span>
            </a>`
         : '';
 
@@ -604,7 +606,7 @@
           >${a.student_name}</a>
           <div class="panel-links">
             <a class="panel-link-primary" href="${a.url}" target="_blank" rel="noopener" aria-label="View interactive version of ${a.painting_name}">
-              View Interactive <span class="arrow">↗</span>
+              View Interactive <span class="arrow">›</span>
             </a>
             ${docLinkHTML}
           </div>
